@@ -12,6 +12,7 @@ interface Project {
   description: string;
   url: string;
   status: 'live' | 'in-progress' | 'coming-soon';
+  category?: 'core' | 'business' | 'fun' | 'archive';
 }
 
 const DEFAULT_PROJECTS: Project[] = [
@@ -22,6 +23,7 @@ const DEFAULT_PROJECTS: Project[] = [
     description: 'Life tracking dashboard',
     url: 'https://pd.nsprd.com',
     status: 'live',
+    category: 'core',
   },
   {
     id: 'lyne',
@@ -30,6 +32,7 @@ const DEFAULT_PROJECTS: Project[] = [
     description: 'Generational wealth platform',
     url: 'https://rp1.nsprd.com',
     status: 'live',
+    category: 'core',
   },
   {
     id: 'portal',
@@ -38,6 +41,7 @@ const DEFAULT_PROJECTS: Project[] = [
     description: 'Business manager',
     url: 'https://portal.nsprd.com',
     status: 'live',
+    category: 'business',
   },
   {
     id: 'memory',
@@ -46,6 +50,7 @@ const DEFAULT_PROJECTS: Project[] = [
     description: 'Memory archive',
     url: 'https://memory.nsprd.com',
     status: 'live',
+    category: 'core',
   },
   {
     id: 'faggnation',
@@ -54,6 +59,7 @@ const DEFAULT_PROJECTS: Project[] = [
     description: 'Podcast archive',
     url: 'https://faggnation.nsprd.com',
     status: 'live',
+    category: 'archive',
   },
   {
     id: 'vibe',
@@ -62,6 +68,7 @@ const DEFAULT_PROJECTS: Project[] = [
     description: 'Fun project',
     url: 'https://vibe.nsprd.com',
     status: 'in-progress',
+    category: 'fun',
   },
 ];
 
@@ -72,6 +79,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   useEffect(() => {
     setMounted(true);
@@ -192,32 +200,58 @@ export default function Home() {
 
         {/* Projects Section */}
         <section className={`mb-12 transition-all duration-1000 delay-200 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
             <div className="flex items-center gap-3">
               <div className="text-3xl">🎯</div>
               <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 text-transparent bg-clip-text">
                 Projects
               </h2>
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl transition-all text-white font-medium shadow-lg shadow-purple-900/50"
-            >
-              + Add Project
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Category Filter */}
+              <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl px-2 py-1">
+                {['all', 'core', 'business', 'archive', 'fun'].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                      categoryFilter === cat
+                        ? 'bg-purple-600 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl transition-all text-white font-medium shadow-lg shadow-purple-900/50"
+              >
+                + Add
+              </button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                isUp={siteStatuses[project.id]}
-                onEdit={() => setEditingProject(project)}
-                onDelete={() => handleDeleteProject(project.id)}
-              />
-            ))}
+            {projects
+              .filter(p => categoryFilter === 'all' || p.category === categoryFilter)
+              .map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  isUp={siteStatuses[project.id]}
+                  onEdit={() => setEditingProject(project)}
+                  onDelete={() => handleDeleteProject(project.id)}
+                />
+              ))}
           </div>
+          
+          {categoryFilter !== 'all' && projects.filter(p => p.category === categoryFilter).length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              No projects in this category yet
+            </div>
+          )}
         </section>
 
         {/* Stats */}

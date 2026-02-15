@@ -9,6 +9,7 @@ interface Project {
   description: string;
   url: string;
   status: 'live' | 'in-progress' | 'coming-soon';
+  category?: 'core' | 'business' | 'fun' | 'archive';
 }
 
 interface AddProjectModalProps {
@@ -26,6 +27,7 @@ export function AddProjectModal({ project, onSave, onClose }: AddProjectModalPro
       description: '',
       url: '',
       status: 'live',
+      category: 'core',
     }
   );
 
@@ -132,6 +134,22 @@ export function AddProjectModal({ project, onSave, onClose }: AddProjectModalPro
               <option value="live">Live</option>
               <option value="in-progress">In Progress</option>
               <option value="coming-soon">Coming Soon</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Category
+            </label>
+            <select
+              value={formData.category || 'core'}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value as Project['category'] })}
+              className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:border-purple-500 focus:outline-none transition-colors"
+            >
+              <option value="core">Core</option>
+              <option value="business">Business</option>
+              <option value="archive">Archive</option>
+              <option value="fun">Fun</option>
             </select>
           </div>
 

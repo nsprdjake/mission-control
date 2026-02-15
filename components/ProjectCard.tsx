@@ -7,6 +7,7 @@ interface Project {
   description: string;
   url: string;
   status: 'live' | 'in-progress' | 'coming-soon';
+  category?: 'core' | 'business' | 'fun' | 'archive';
 }
 
 interface ProjectCardProps {
@@ -101,9 +102,16 @@ export function ProjectCard({ project, isUp, onEdit, onDelete }: ProjectCardProp
 
       {/* Content */}
       <div className="relative">
-        <h3 className="text-2xl sm:text-3xl font-bold mb-3 text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-300 transition-all duration-300">
+        <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-300 transition-all duration-300">
           {project.name}
         </h3>
+        {project.category && (
+          <div className="mb-3">
+            <span className="inline-block text-xs px-2 py-1 rounded-md bg-white/10 text-gray-400 font-medium">
+              {project.category}
+            </span>
+          </div>
+        )}
         <p className="text-gray-400 group-hover:text-gray-300 mb-6 text-sm sm:text-base leading-relaxed transition-colors duration-300">
           {project.description}
         </p>
