@@ -13,6 +13,7 @@ interface Project {
   url: string;
   status: 'live' | 'in-progress' | 'coming-soon';
   category?: 'core' | 'business' | 'fun' | 'archive';
+  progress?: number;
 }
 
 const DEFAULT_PROJECTS: Project[] = [
@@ -24,6 +25,7 @@ const DEFAULT_PROJECTS: Project[] = [
     url: 'https://pd.nsprd.com',
     status: 'live',
     category: 'core',
+    progress: 100,
   },
   {
     id: 'lyne',
@@ -33,6 +35,7 @@ const DEFAULT_PROJECTS: Project[] = [
     url: 'https://rp1.nsprd.com',
     status: 'live',
     category: 'core',
+    progress: 100,
   },
   {
     id: 'portal',
@@ -42,6 +45,7 @@ const DEFAULT_PROJECTS: Project[] = [
     url: 'https://nsprd.com/login',
     status: 'live',
     category: 'business',
+    progress: 100,
   },
   {
     id: 'memory',
@@ -51,6 +55,7 @@ const DEFAULT_PROJECTS: Project[] = [
     url: 'https://memory.nsprd.com',
     status: 'live',
     category: 'core',
+    progress: 100,
   },
   {
     id: 'bailey',
@@ -60,6 +65,7 @@ const DEFAULT_PROJECTS: Project[] = [
     url: 'https://bailey.nsprd.com',
     status: 'live',
     category: 'fun',
+    progress: 100,
   },
   {
     id: 'faggnation',
@@ -69,6 +75,7 @@ const DEFAULT_PROJECTS: Project[] = [
     url: 'https://faggnation.nsprd.com',
     status: 'live',
     category: 'archive',
+    progress: 100,
   },
   {
     id: 'petos',
@@ -78,6 +85,7 @@ const DEFAULT_PROJECTS: Project[] = [
     url: 'https://petos.app',
     status: 'coming-soon',
     category: 'core',
+    progress: 15,
   },
   {
     id: 'wealthos',
@@ -87,10 +95,11 @@ const DEFAULT_PROJECTS: Project[] = [
     url: 'https://wealth.nsprd.com',
     status: 'coming-soon',
     category: 'core',
+    progress: 5,
   },
 ];
 
-const PROJECTS_VERSION = '3'; // Increment to force refresh from defaults
+const PROJECTS_VERSION = '4'; // Increment to force refresh from defaults
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -122,6 +131,17 @@ export default function Home() {
       }
     }
     checkSiteStatuses();
+
+    // Keyboard shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+K or Ctrl+K to open add modal
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowAddModal(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const checkSiteStatuses = async () => {
