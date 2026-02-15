@@ -70,15 +70,6 @@ const DEFAULT_PROJECTS: Project[] = [
     status: 'live',
     category: 'archive',
   },
-  {
-    id: 'vibe',
-    name: 'Desert Vibe Check',
-    emoji: '🎨',
-    description: 'Fun project',
-    url: 'https://vibe.nsprd.com',
-    status: 'in-progress',
-    category: 'fun',
-  },
 ];
 
 export default function Home() {
