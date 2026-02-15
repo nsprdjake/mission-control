@@ -70,9 +70,27 @@ const DEFAULT_PROJECTS: Project[] = [
     status: 'live',
     category: 'archive',
   },
+  {
+    id: 'petos',
+    name: 'PetOS',
+    emoji: '🐾',
+    description: 'Pet tracking SaaS',
+    url: 'https://petos.app',
+    status: 'coming-soon',
+    category: 'core',
+  },
+  {
+    id: 'wealthos',
+    name: 'WealthOS',
+    emoji: '💰',
+    description: 'Personal finance tracker',
+    url: 'https://wealth.nsprd.com',
+    status: 'coming-soon',
+    category: 'core',
+  },
 ];
 
-const PROJECTS_VERSION = '2'; // Increment to force refresh from defaults
+const PROJECTS_VERSION = '3'; // Increment to force refresh from defaults
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
