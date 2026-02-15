@@ -39,7 +39,7 @@ const DEFAULT_PROJECTS: Project[] = [
     name: 'Inspired Design Portal',
     emoji: '💼',
     description: 'Business manager',
-    url: 'https://portal.nsprd.com',
+    url: 'https://nsprd.com/login',
     status: 'live',
     category: 'business',
   },
