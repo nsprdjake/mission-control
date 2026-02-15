@@ -53,6 +53,15 @@ const DEFAULT_PROJECTS: Project[] = [
     category: 'core',
   },
   {
+    id: 'bailey',
+    name: 'Bailey Dashboard',
+    emoji: '🐕',
+    description: 'All things Bailey',
+    url: 'https://bailey.nsprd.com',
+    status: 'live',
+    category: 'fun',
+  },
+  {
     id: 'faggnation',
     name: 'Faggnation Archive',
     emoji: '🎬',
