@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { ProjectCard } from '@/components/ProjectCard';
-import { QuickAction } from '@/components/QuickAction';
+import { AddProjectModal } from '@/components/AddProjectModal';
 
 interface Project {
   id: string;
@@ -14,7 +14,7 @@ interface Project {
   status: 'live' | 'in-progress' | 'coming-soon';
 }
 
-const projects: Project[] = [
+const DEFAULT_PROJECTS: Project[] = [
   {
     id: 'lifeos',
     name: 'LifeOS',
@@ -65,24 +65,28 @@ const projects: Project[] = [
   },
 ];
 
-const quickActions = [
-  { id: 'devbot', name: 'DevBot', icon: '💻', description: 'Development assistance' },
-  { id: 'chatbot', name: 'ChatBot', icon: '💬', description: 'General conversation' },
-  { id: 'creativebot', name: 'CreativeBot', icon: '🎨', description: 'Creative projects' },
-  { id: 'bizbot', name: 'BizBot', icon: '📊', description: 'Business strategy' },
-  { id: 'researchbot', name: 'ResearchBot', icon: '🔬', description: 'Research & analysis' },
-  { id: 'reminders', name: 'Today\'s Reminders', icon: '⏰', description: 'View reminders' },
-  { id: 'wins', name: 'Recent Wins', icon: '🏆', description: 'Celebrate success' },
-  { id: 'bailey', name: 'Bailey Walk Tracker', icon: '🐕', description: 'Track walks' },
-];
-
 export default function Home() {
+  const [projects, setProjects] = useState<Project[]>([]);
   const [siteStatuses, setSiteStatuses] = useState<Record<string, boolean>>({});
   const [checking, setChecking] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    // Load projects from localStorage or use defaults
+    const saved = localStorage.getItem('missionControlProjects');
+    if (saved) {
+      try {
+        setProjects(JSON.parse(saved));
+      } catch {
+        setProjects(DEFAULT_PROJECTS);
+      }
+    } else {
+      setProjects(DEFAULT_PROJECTS);
+      localStorage.setItem('missionControlProjects', JSON.stringify(DEFAULT_PROJECTS));
+    }
     checkSiteStatuses();
   }, []);
 
@@ -106,226 +110,180 @@ export default function Home() {
     setChecking(false);
   };
 
+  const saveProjects = (newProjects: Project[]) => {
+    setProjects(newProjects);
+    localStorage.setItem('missionControlProjects', JSON.stringify(newProjects));
+  };
+
+  const handleAddProject = (project: Project) => {
+    const newProjects = [...projects, project];
+    saveProjects(newProjects);
+    setShowAddModal(false);
+  };
+
+  const handleEditProject = (project: Project) => {
+    const newProjects = projects.map(p => p.id === project.id ? project : p);
+    saveProjects(newProjects);
+    setEditingProject(null);
+  };
+
+  const handleDeleteProject = (id: string) => {
+    if (confirm('Are you sure you want to delete this project?')) {
+      const newProjects = projects.filter(p => p.id !== id);
+      saveProjects(newProjects);
+    }
+  };
+
   const liveProjects = projects.filter(p => p.status === 'live').length;
   const upSites = Object.values(siteStatuses).filter(Boolean).length;
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white overflow-hidden relative">
-      {/* Animated Background Gradient Mesh */}
+    <main className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Premium Animated Background */}
       <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950"></div>
-        <div className="absolute top-0 -left-40 w-80 h-80 bg-purple-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
-        <div className="absolute top-0 -right-40 w-80 h-80 bg-blue-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-40 left-20 w-80 h-80 bg-pink-600/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjAzIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-40"></div>
+        {/* Base gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-purple-950/20 to-black"></div>
+        
+        {/* Animated orbs */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-float-delayed"></div>
+        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-600/10 rounded-full blur-3xl animate-float-slow"></div>
+        
+        {/* Grid overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 relative">
         {/* Hero Section */}
-        <div className={`text-center mb-16 sm:mb-20 lg:mb-24 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
-          <div className="mb-6 inline-block">
-            <div className="text-6xl sm:text-7xl md:text-8xl mb-2 animate-float">🚀</div>
+        <div className={`text-center mb-12 sm:mb-16 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
+          <div className="mb-4 inline-block">
+            <div className="text-6xl sm:text-7xl animate-float">🚀</div>
           </div>
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tight">
-            <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-transparent bg-clip-text animate-gradient-x inline-block">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-4 tracking-tight">
+            <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 text-transparent bg-clip-text">
               Mission Control
             </span>
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-gray-400 mb-8 sm:mb-10 max-w-2xl mx-auto font-light leading-relaxed">
+          <p className="text-lg sm:text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
             Your command center for all projects, tools, and systems
           </p>
           
-          {/* System Status Card */}
-          <div className="inline-flex items-center gap-4 sm:gap-6 bg-gray-900/60 backdrop-blur-xl border border-gray-800/50 rounded-2xl px-6 sm:px-8 py-4 shadow-2xl">
+          {/* System Status */}
+          <div className="inline-flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-3 shadow-2xl">
             <div className="flex items-center gap-3">
               <StatusIndicator isUp={!checking && upSites === liveProjects} size="md" />
               <div className="text-left">
-                <div className="text-xs text-gray-500 uppercase tracking-wider font-medium">System Status</div>
-                <div className="text-sm sm:text-base text-gray-300 font-semibold">
+                <div className="text-xs text-gray-500 uppercase font-medium">System Status</div>
+                <div className="text-sm text-gray-300 font-semibold">
                   {checking ? 'Checking...' : `${upSites}/${liveProjects} Online`}
                 </div>
               </div>
             </div>
-            <div className="w-px h-10 bg-gray-800"></div>
+            <div className="w-px h-10 bg-white/10"></div>
             <button
               onClick={checkSiteStatuses}
               disabled={checking}
-              className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl transition-all duration-300 text-white font-medium shadow-lg shadow-blue-900/50 hover:shadow-blue-800/60 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl transition-all text-white font-medium disabled:opacity-50"
             >
-              <span className={`text-lg ${checking ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`}>🔄</span>
-              <span className="hidden sm:inline">Refresh</span>
+              <span className={checking ? 'animate-spin' : ''}>🔄</span>
             </button>
           </div>
         </div>
 
-        {/* Projects Grid */}
-        <section className={`mb-16 sm:mb-20 transition-all duration-1000 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="text-3xl sm:text-4xl">🎯</div>
-            <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-white to-gray-400 text-transparent bg-clip-text">
-              Projects
-            </h2>
+        {/* Projects Section */}
+        <section className={`mb-12 transition-all duration-1000 delay-200 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">🎯</div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 text-transparent bg-clip-text">
+                Projects
+              </h2>
+            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl transition-all text-white font-medium shadow-lg shadow-purple-900/50"
+            >
+              + Add Project
+            </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {projects.map((project, index) => (
-              <div
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {projects.map((project) => (
+              <ProjectCard
                 key={project.id}
-                className="transition-all duration-700"
-                style={{
-                  animationDelay: `${index * 100}ms`,
-                  animation: mounted ? 'fadeInUp 0.6s ease-out forwards' : 'none',
-                  opacity: mounted ? 1 : 0,
-                }}
-              >
-                <ProjectCard
-                  project={project}
-                  isUp={siteStatuses[project.id]}
-                />
-              </div>
+                project={project}
+                isUp={siteStatuses[project.id]}
+                onEdit={() => setEditingProject(project)}
+                onDelete={() => handleDeleteProject(project.id)}
+              />
             ))}
           </div>
         </section>
 
-        {/* Quick Actions */}
-        <section className={`mb-16 sm:mb-20 transition-all duration-1000 delay-400 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="text-3xl sm:text-4xl">⚡</div>
-            <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-white to-gray-400 text-transparent bg-clip-text">
-              Quick Actions
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            {quickActions.map((action, index) => (
-              <div
-                key={action.id}
-                className="transition-all duration-700"
-                style={{
-                  animationDelay: `${index * 50}ms`,
-                  animation: mounted ? 'fadeInUp 0.6s ease-out forwards' : 'none',
-                  opacity: mounted ? 1 : 0,
-                }}
-              >
-                <QuickAction action={action} />
+        {/* Stats */}
+        <section className={`transition-all duration-1000 delay-400 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-purple-500/50 transition-all">
+              <div className="text-4xl font-black text-purple-400 mb-2">
+                {liveProjects}
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Stats Dashboard */}
-        <section className={`mb-12 transition-all duration-1000 delay-600 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="text-3xl sm:text-4xl">📊</div>
-            <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-white to-gray-400 text-transparent bg-clip-text">
-              Overview
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-            <div className="group relative bg-gradient-to-br from-blue-600/10 to-blue-800/10 backdrop-blur-xl border border-blue-500/20 rounded-2xl p-6 sm:p-8 hover:border-blue-400/40 transition-all duration-300 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative">
-                <div className="text-5xl sm:text-6xl font-black text-blue-400 mb-3 group-hover:scale-110 transition-transform duration-300">
-                  {liveProjects}
-                </div>
-                <div className="text-gray-400 text-sm sm:text-base font-medium tracking-wide">Projects Live</div>
-              </div>
+              <div className="text-gray-400 text-sm font-medium">Projects Live</div>
             </div>
-            <div className="group relative bg-gradient-to-br from-green-600/10 to-green-800/10 backdrop-blur-xl border border-green-500/20 rounded-2xl p-6 sm:p-8 hover:border-green-400/40 transition-all duration-300 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/0 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative">
-                <div className="text-5xl sm:text-6xl font-black text-green-400 mb-3 group-hover:scale-110 transition-transform duration-300">
-                  {checking ? '...' : upSites}
-                </div>
-                <div className="text-gray-400 text-sm sm:text-base font-medium tracking-wide">Systems Up</div>
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-green-500/50 transition-all">
+              <div className="text-4xl font-black text-green-400 mb-2">
+                {checking ? '...' : upSites}
               </div>
+              <div className="text-gray-400 text-sm font-medium">Systems Up</div>
             </div>
-            <div className="group relative bg-gradient-to-br from-purple-600/10 to-purple-800/10 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 sm:p-8 hover:border-purple-400/40 transition-all duration-300 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative">
-                <div className="text-5xl sm:text-6xl font-black text-purple-400 mb-3 group-hover:scale-110 transition-transform duration-300">
-                  {quickActions.length}
-                </div>
-                <div className="text-gray-400 text-sm sm:text-base font-medium tracking-wide">Quick Actions</div>
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-pink-500/50 transition-all">
+              <div className="text-4xl font-black text-pink-400 mb-2">
+                {projects.length}
               </div>
+              <div className="text-gray-400 text-sm font-medium">Total Projects</div>
             </div>
           </div>
         </section>
 
         {/* Footer */}
-        <footer className={`mt-16 sm:mt-20 text-center transition-all duration-1000 delay-800 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="inline-flex flex-col items-center gap-3 px-8 py-6 bg-gray-900/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl">
-            <p className="text-gray-500 text-sm font-medium">Built with Next.js 15 & Tailwind CSS</p>
-            <div className="flex items-center gap-2 text-gray-400 text-xs">
-              <span className="animate-pulse">✨</span>
-              <span>Front door to Jake's digital empire</span>
-              <span className="animate-pulse">✨</span>
-            </div>
+        <footer className={`mt-12 text-center transition-all duration-1000 delay-600 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="inline-flex items-center gap-2 text-gray-500 text-sm">
+            <span className="animate-pulse">✨</span>
+            <span>Front door to Jake's digital empire</span>
+            <span className="animate-pulse">✨</span>
           </div>
         </footer>
       </div>
 
+      {/* Add/Edit Project Modal */}
+      {(showAddModal || editingProject) && (
+        <AddProjectModal
+          project={editingProject}
+          onSave={editingProject ? handleEditProject : handleAddProject}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingProject(null);
+          }}
+        />
+      )}
+
       <style jsx global>{`
-        @keyframes blob {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-        }
-
-        @keyframes gradient-x {
-          0%, 100% {
-            background-size: 200% 200%;
-            background-position: left center;
-          }
-          50% {
-            background-size: 200% 200%;
-            background-position: right center;
-          }
-        }
-
         @keyframes float {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-20px);
-          }
+          0%, 100% { transform: translateY(0) translateX(0); }
+          33% { transform: translateY(-20px) translateX(10px); }
+          66% { transform: translateY(10px) translateX(-10px); }
         }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0) translateX(0); }
+          33% { transform: translateY(10px) translateX(-20px); }
+          66% { transform: translateY(-10px) translateX(10px); }
         }
-
-        .animate-blob {
-          animation: blob 7s infinite;
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0) translateX(0); }
+          50% { transform: translateY(-15px) translateX(15px); }
         }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-
-        .animate-gradient-x {
-          animation: gradient-x 3s ease infinite;
-        }
-
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
+        .animate-float { animation: float 8s ease-in-out infinite; }
+        .animate-float-delayed { animation: float-delayed 10s ease-in-out infinite; }
+        .animate-float-slow { animation: float-slow 12s ease-in-out infinite; }
       `}</style>
     </main>
   );

@@ -12,9 +12,11 @@ interface Project {
 interface ProjectCardProps {
   project: Project;
   isUp?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export function ProjectCard({ project, isUp }: ProjectCardProps) {
+export function ProjectCard({ project, isUp, onEdit, onDelete }: ProjectCardProps) {
   const statusConfig = {
     live: {
       gradient: 'from-green-600/20 to-emerald-800/20',
@@ -46,7 +48,7 @@ export function ProjectCard({ project, isUp }: ProjectCardProps) {
 
   return (
     <div
-      className={`group relative bg-gradient-to-br ${config.gradient} backdrop-blur-xl border ${config.border} ${config.hoverBorder} rounded-2xl p-6 sm:p-7 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 shadow-xl ${config.glow} overflow-hidden`}
+      className={`group relative bg-white/5 backdrop-blur-xl border border-white/10 hover:border-${config.border.split('-')[1]}/50 rounded-2xl p-6 sm:p-7 transition-all duration-500 hover:scale-[1.03] hover:-translate-y-2 shadow-2xl hover:shadow-3xl ${config.glow} overflow-hidden`}
     >
       {/* Animated Background Gradient on Hover */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -54,7 +56,7 @@ export function ProjectCard({ project, isUp }: ProjectCardProps) {
       {/* Shimmer Effect */}
       <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
-      {/* Status Badge */}
+      {/* Status Badge & Actions */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         {project.status === 'live' && isUp !== undefined && (
           <StatusIndicator isUp={isUp} size="sm" />
@@ -62,6 +64,34 @@ export function ProjectCard({ project, isUp }: ProjectCardProps) {
         <span className={`text-xs px-3 py-1.5 rounded-full border ${config.labelBg} font-semibold backdrop-blur-sm`}>
           {config.label}
         </span>
+      </div>
+      
+      {/* Edit/Delete Actions */}
+      <div className="absolute top-4 left-4 flex items-center gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        {onEdit && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onEdit();
+            }}
+            className="w-8 h-8 rounded-lg bg-blue-600/80 hover:bg-blue-500 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110"
+            title="Edit project"
+          >
+            ✏️
+          </button>
+        )}
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onDelete();
+            }}
+            className="w-8 h-8 rounded-lg bg-red-600/80 hover:bg-red-500 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110"
+            title="Delete project"
+          >
+            🗑️
+          </button>
+        )}
       </div>
 
       {/* Icon */}
