@@ -72,6 +72,8 @@ const DEFAULT_PROJECTS: Project[] = [
   },
 ];
 
+const PROJECTS_VERSION = '2'; // Increment to force refresh from defaults
+
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [siteStatuses, setSiteStatuses] = useState<Record<string, boolean>>({});
@@ -83,17 +85,23 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    // Load projects from localStorage or use defaults
+    // Check version and reload from defaults if changed
+    const savedVersion = localStorage.getItem('missionControlVersion');
     const saved = localStorage.getItem('missionControlProjects');
-    if (saved) {
+    
+    if (savedVersion !== PROJECTS_VERSION || !saved) {
+      // Version mismatch or no saved data - use defaults
+      setProjects(DEFAULT_PROJECTS);
+      localStorage.setItem('missionControlProjects', JSON.stringify(DEFAULT_PROJECTS));
+      localStorage.setItem('missionControlVersion', PROJECTS_VERSION);
+    } else {
+      // Load from localStorage
       try {
         setProjects(JSON.parse(saved));
       } catch {
         setProjects(DEFAULT_PROJECTS);
+        localStorage.setItem('missionControlProjects', JSON.stringify(DEFAULT_PROJECTS));
       }
-    } else {
-      setProjects(DEFAULT_PROJECTS);
-      localStorage.setItem('missionControlProjects', JSON.stringify(DEFAULT_PROJECTS));
     }
     checkSiteStatuses();
   }, []);
