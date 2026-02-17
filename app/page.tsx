@@ -83,11 +83,11 @@ const DEFAULT_PROJECTS: Project[] = [
     id: 'petos',
     name: 'PetOS',
     emoji: '🐾',
-    description: 'Pet tracking SaaS',
+    description: 'Pet lifestyle tracker',
     url: 'https://petos.app',
-    status: 'coming-soon',
+    status: 'live',
     category: 'core',
-    progress: 15,
+    progress: 100,
   },
   {
     id: 'wealthos',
@@ -95,9 +95,9 @@ const DEFAULT_PROJECTS: Project[] = [
     emoji: '💰',
     description: 'Personal finance tracker',
     url: 'https://wealth.nsprd.com',
-    status: 'coming-soon',
+    status: 'live',
     category: 'core',
-    progress: 5,
+    progress: 100,
   },
 ];
 
