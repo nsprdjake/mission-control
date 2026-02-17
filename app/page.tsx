@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { ProjectCard } from '@/components/ProjectCard';
 import { AddProjectModal } from '@/components/AddProjectModal';
+import { QuickActions } from '@/components/QuickActions';
+import { SystemHealth } from '@/components/SystemHealth';
 
 interface Project {
   id: string;
@@ -116,6 +118,8 @@ export default function Home() {
     const savedVersion = localStorage.getItem('missionControlVersion');
     const saved = localStorage.getItem('missionControlProjects');
     
+    let loadedProjects = DEFAULT_PROJECTS;
+    
     if (savedVersion !== PROJECTS_VERSION || !saved) {
       // Version mismatch or no saved data - use defaults
       setProjects(DEFAULT_PROJECTS);
@@ -124,13 +128,16 @@ export default function Home() {
     } else {
       // Load from localStorage
       try {
-        setProjects(JSON.parse(saved));
+        loadedProjects = JSON.parse(saved);
+        setProjects(loadedProjects);
       } catch {
         setProjects(DEFAULT_PROJECTS);
         localStorage.setItem('missionControlProjects', JSON.stringify(DEFAULT_PROJECTS));
       }
     }
-    checkSiteStatuses();
+    
+    // Check statuses after projects are loaded
+    checkSiteStatuses(loadedProjects);
 
     // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -144,11 +151,12 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const checkSiteStatuses = async () => {
+  const checkSiteStatuses = async (projectList?: Project[]) => {
     setChecking(true);
     const statuses: Record<string, boolean> = {};
+    const projectsToCheck = projectList || projects;
     
-    for (const project of projects) {
+    for (const project of projectsToCheck) {
       if (project.status === 'live') {
         try {
           const response = await fetch(`/api/check-status?url=${encodeURIComponent(project.url)}`);
@@ -235,13 +243,23 @@ export default function Home() {
             </div>
             <div className="w-px h-10 bg-white/10"></div>
             <button
-              onClick={checkSiteStatuses}
+              onClick={() => checkSiteStatuses()}
               disabled={checking}
               className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl transition-all text-white font-medium disabled:opacity-50"
             >
               <span className={checking ? 'animate-spin' : ''}>🔄</span>
             </button>
           </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className={`transition-all duration-1000 delay-100 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+          <QuickActions />
+        </div>
+
+        {/* System Health */}
+        <div className={`transition-all duration-1000 delay-150 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+          <SystemHealth />
         </div>
 
         {/* Projects Section */}
