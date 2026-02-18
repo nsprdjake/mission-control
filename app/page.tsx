@@ -6,6 +6,7 @@ import { ProjectCard } from '@/components/ProjectCard';
 import { AddProjectModal } from '@/components/AddProjectModal';
 import { QuickActions } from '@/components/QuickActions';
 import { SystemHealth } from '@/components/SystemHealth';
+import { supabase } from '@/lib/supabase';
 
 interface Project {
   id: string;
@@ -111,8 +112,6 @@ const DEFAULT_PROJECTS: Project[] = [
   },
 ];
 
-const PROJECTS_VERSION = '6'; // Increment to force refresh from defaults
-
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [siteStatuses, setSiteStatuses] = useState<Record<string, boolean>>({});
@@ -121,37 +120,14 @@ export default function Home() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [dbSource, setDbSource] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Check version and reload from defaults if changed
-    const savedVersion = localStorage.getItem('missionControlVersion');
-    const saved = localStorage.getItem('missionControlProjects');
-    
-    let loadedProjects = DEFAULT_PROJECTS;
-    
-    if (savedVersion !== PROJECTS_VERSION || !saved) {
-      // Version mismatch or no saved data - use defaults
-      setProjects(DEFAULT_PROJECTS);
-      localStorage.setItem('missionControlProjects', JSON.stringify(DEFAULT_PROJECTS));
-      localStorage.setItem('missionControlVersion', PROJECTS_VERSION);
-    } else {
-      // Load from localStorage
-      try {
-        loadedProjects = JSON.parse(saved);
-        setProjects(loadedProjects);
-      } catch {
-        setProjects(DEFAULT_PROJECTS);
-        localStorage.setItem('missionControlProjects', JSON.stringify(DEFAULT_PROJECTS));
-      }
-    }
-    
-    // Check statuses after projects are loaded
-    checkSiteStatuses(loadedProjects);
+    loadProjects();
 
     // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+K or Ctrl+K to open add modal
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setShowAddModal(true);
@@ -160,6 +136,42 @@ export default function Home() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const loadProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('nsprd_projects')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Map DB rows to Project shape (status 'archived' → display as 'in-progress' for UI compat)
+        const mapped: Project[] = data.map((row) => ({
+          id: row.id,
+          name: row.name,
+          emoji: row.emoji ?? '🚀',
+          description: row.description ?? '',
+          url: row.url ?? '',
+          status: (row.status === 'archived' ? 'in-progress' : row.status) as Project['status'],
+          category: row.category as Project['category'],
+          progress: row.progress ?? 0,
+        }));
+        setProjects(mapped);
+        setDbSource(true);
+        checkSiteStatuses(mapped);
+        return;
+      }
+    } catch (err) {
+      console.warn('Supabase fetch failed, falling back to defaults:', err);
+    }
+
+    // Fallback to defaults
+    setProjects(DEFAULT_PROJECTS);
+    setDbSource(false);
+    checkSiteStatuses(DEFAULT_PROJECTS);
+  };
 
   const checkSiteStatuses = async (projectList?: Project[]) => {
     setChecking(true);
@@ -182,27 +194,43 @@ export default function Home() {
     setChecking(false);
   };
 
-  const saveProjects = (newProjects: Project[]) => {
-    setProjects(newProjects);
-    localStorage.setItem('missionControlProjects', JSON.stringify(newProjects));
+  const saveProject = async (project: Project) => {
+    if (dbSource) {
+      await supabase.from('nsprd_projects').upsert({
+        id: project.id,
+        name: project.name,
+        emoji: project.emoji,
+        description: project.description,
+        url: project.url,
+        status: project.status,
+        category: project.category ?? 'core',
+        progress: project.progress ?? 0,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+    }
   };
 
-  const handleAddProject = (project: Project) => {
+  const handleAddProject = async (project: Project) => {
     const newProjects = [...projects, project];
-    saveProjects(newProjects);
+    setProjects(newProjects);
+    await saveProject(project);
     setShowAddModal(false);
   };
 
-  const handleEditProject = (project: Project) => {
+  const handleEditProject = async (project: Project) => {
     const newProjects = projects.map(p => p.id === project.id ? project : p);
-    saveProjects(newProjects);
+    setProjects(newProjects);
+    await saveProject(project);
     setEditingProject(null);
   };
 
-  const handleDeleteProject = (id: string) => {
+  const handleDeleteProject = async (id: string) => {
     if (confirm('Are you sure you want to delete this project?')) {
       const newProjects = projects.filter(p => p.id !== id);
-      saveProjects(newProjects);
+      setProjects(newProjects);
+      if (dbSource) {
+        await supabase.from('nsprd_projects').delete().eq('id', id);
+      }
     }
   };
 
@@ -252,6 +280,11 @@ export default function Home() {
               </div>
             </div>
             <div className="w-px h-10 bg-white/10"></div>
+            {dbSource && (
+              <div className="text-xs text-green-400/70 font-medium px-2">
+                ⚡ Live DB
+              </div>
+            )}
             <button
               onClick={() => checkSiteStatuses()}
               disabled={checking}
