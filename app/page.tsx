@@ -84,10 +84,10 @@ const DEFAULT_PROJECTS: Project[] = [
     name: 'PetOS',
     emoji: '🐾',
     description: 'Pet lifestyle tracker',
-    url: 'https://petos.app',
-    status: 'live',
+    url: 'https://petos.nsprd.com',
+    status: 'in-progress',
     category: 'core',
-    progress: 100,
+    progress: 40,
   },
   {
     id: 'wealthos',
