@@ -95,9 +95,9 @@ const DEFAULT_PROJECTS: Project[] = [
     emoji: '💰',
     description: 'Personal finance tracker',
     url: 'https://wealth.nsprd.com',
-    status: 'live',
+    status: 'in-progress',
     category: 'core',
-    progress: 100,
+    progress: 40,
   },
   {
     id: 'hhh',
@@ -111,7 +111,7 @@ const DEFAULT_PROJECTS: Project[] = [
   },
 ];
 
-const PROJECTS_VERSION = '5'; // Increment to force refresh from defaults
+const PROJECTS_VERSION = '6'; // Increment to force refresh from defaults
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
