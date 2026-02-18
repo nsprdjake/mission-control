@@ -99,9 +99,19 @@ const DEFAULT_PROJECTS: Project[] = [
     category: 'core',
     progress: 100,
   },
+  {
+    id: 'hhh',
+    name: 'Happy Hour Heroes',
+    emoji: '🍺',
+    description: 'The drinking game app',
+    url: 'https://hhh.nsprd.com',
+    status: 'in-progress',
+    category: 'fun',
+    progress: 30,
+  },
 ];
 
-const PROJECTS_VERSION = '4'; // Increment to force refresh from defaults
+const PROJECTS_VERSION = '5'; // Increment to force refresh from defaults
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
