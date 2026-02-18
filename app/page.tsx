@@ -17,6 +17,8 @@ interface Project {
   status: 'live' | 'in-progress' | 'coming-soon';
   category?: 'core' | 'business' | 'fun' | 'archive';
   progress?: number;
+  vercelUrl?: string;
+  lastDeployed?: string;
 }
 
 const DEFAULT_PROJECTS: Project[] = [
@@ -59,6 +61,8 @@ const DEFAULT_PROJECTS: Project[] = [
     status: 'live',
     category: 'core',
     progress: 100,
+    vercelUrl: 'https://vercel.com/jake-8792/memory-palace',
+    lastDeployed: 'Feb 18, 2026',
   },
   {
     id: 'bailey',
@@ -69,6 +73,8 @@ const DEFAULT_PROJECTS: Project[] = [
     status: 'live',
     category: 'fun',
     progress: 100,
+    vercelUrl: 'https://vercel.com/jake-8792/bailey-dashboard',
+    lastDeployed: 'Feb 18, 2026',
   },
   {
     id: 'faggnation',
@@ -99,6 +105,8 @@ const DEFAULT_PROJECTS: Project[] = [
     status: 'in-progress',
     category: 'core',
     progress: 40,
+    vercelUrl: 'https://vercel.com/jake-8792/finance-dashboard',
+    lastDeployed: 'Feb 18, 2026',
   },
   {
     id: 'hhh',
@@ -109,6 +117,8 @@ const DEFAULT_PROJECTS: Project[] = [
     status: 'in-progress',
     category: 'fun',
     progress: 30,
+    vercelUrl: 'https://vercel.com/jake-8792/happy-hour-heroes',
+    lastDeployed: 'Feb 18, 2026',
   },
 ];
 
@@ -157,6 +167,9 @@ export default function Home() {
           status: (row.status === 'archived' ? 'in-progress' : row.status) as Project['status'],
           category: row.category as Project['category'],
           progress: row.progress ?? 0,
+          lastDeployed: row.updated_at
+            ? new Date(row.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : undefined,
         }));
         setProjects(mapped);
         setDbSource(true);
