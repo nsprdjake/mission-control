@@ -1,11 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { StatusIndicator } from '@/components/StatusIndicator';
 import { ProjectCard } from '@/components/ProjectCard';
-import { AddProjectModal } from '@/components/AddProjectModal';
-import { QuickActions } from '@/components/QuickActions';
-import { SystemHealth } from '@/components/SystemHealth';
 import { supabase } from '@/lib/supabase';
 
 interface Project {
@@ -17,8 +13,14 @@ interface Project {
   status: 'live' | 'in-progress' | 'coming-soon';
   category?: 'core' | 'business' | 'fun' | 'archive';
   progress?: number;
-  vercelUrl?: string;
-  lastDeployed?: string;
+  updated_at?: string;
+}
+
+interface HealthStats {
+  totalProjects: number;
+  liveProjects: number;
+  avgProgress: number;
+  lastUpdate: string;
 }
 
 const DEFAULT_PROJECTS: Project[] = [
@@ -61,20 +63,16 @@ const DEFAULT_PROJECTS: Project[] = [
     status: 'live',
     category: 'core',
     progress: 100,
-    vercelUrl: 'https://vercel.com/jake-8792/memory-palace',
-    lastDeployed: 'Feb 18, 2026',
   },
   {
     id: 'bailey',
     name: 'Bailey Dashboard',
     emoji: '🐕',
-    description: 'All things Bailey',
+    description: "Bailey's health tracker",
     url: 'https://bailey.nsprd.com',
     status: 'live',
     category: 'fun',
     progress: 100,
-    vercelUrl: 'https://vercel.com/jake-8792/bailey-dashboard',
-    lastDeployed: 'Feb 18, 2026',
   },
   {
     id: 'faggnation',
@@ -90,11 +88,31 @@ const DEFAULT_PROJECTS: Project[] = [
     id: 'petos',
     name: 'PetOS',
     emoji: '🐾',
-    description: 'Pet lifestyle tracker',
+    description: 'Complete pet management system',
     url: 'https://petos.nsprd.com',
-    status: 'in-progress',
+    status: 'live',
     category: 'core',
-    progress: 40,
+    progress: 100,
+  },
+  {
+    id: 'prep',
+    name: 'Print File Prep',
+    emoji: '🖨️',
+    description: 'Convert designs to print-ready PDFs',
+    url: 'https://prep.nsprd.com',
+    status: 'live',
+    category: 'business',
+    progress: 100,
+  },
+  {
+    id: 'onething',
+    name: 'ONE THING',
+    emoji: '⏱️',
+    description: 'Anti-multitasking productivity timer',
+    url: 'https://one-thing-three.vercel.app',
+    status: 'live',
+    category: 'fun',
+    progress: 100,
   },
   {
     id: 'wealthos',
@@ -105,8 +123,6 @@ const DEFAULT_PROJECTS: Project[] = [
     status: 'in-progress',
     category: 'core',
     progress: 40,
-    vercelUrl: 'https://vercel.com/jake-8792/finance-dashboard',
-    lastDeployed: 'Feb 18, 2026',
   },
   {
     id: 'hhh',
@@ -117,34 +133,20 @@ const DEFAULT_PROJECTS: Project[] = [
     status: 'in-progress',
     category: 'fun',
     progress: 30,
-    vercelUrl: 'https://vercel.com/jake-8792/happy-hour-heroes',
-    lastDeployed: 'Feb 18, 2026',
   },
 ];
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [siteStatuses, setSiteStatuses] = useState<Record<string, boolean>>({});
-  const [checking, setChecking] = useState(true);
-  const [mounted, setMounted] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [dbSource, setDbSource] = useState(false);
+  const [healthStats, setHealthStats] = useState<HealthStats>({
+    totalProjects: 0,
+    liveProjects: 0,
+    avgProgress: 0,
+    lastUpdate: 'Never',
+  });
 
   useEffect(() => {
-    setMounted(true);
     loadProjects();
-
-    // Keyboard shortcuts
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setShowAddModal(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const loadProjects = async () => {
@@ -157,7 +159,6 @@ export default function Home() {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Map DB rows to Project shape (status 'archived' → display as 'in-progress' for UI compat)
         const mapped: Project[] = data.map((row) => ({
           id: row.id,
           name: row.name,
@@ -167,277 +168,216 @@ export default function Home() {
           status: (row.status === 'archived' ? 'in-progress' : row.status) as Project['status'],
           category: row.category as Project['category'],
           progress: row.progress ?? 0,
-          lastDeployed: row.updated_at
-            ? new Date(row.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-            : undefined,
+          updated_at: row.updated_at ?? undefined,
         }));
         setProjects(mapped);
-        setDbSource(true);
-        checkSiteStatuses(mapped);
+        calculateHealthStats(data);
         return;
       }
     } catch (err) {
       console.warn('Supabase fetch failed, falling back to defaults:', err);
     }
 
-    // Fallback to defaults
     setProjects(DEFAULT_PROJECTS);
-    setDbSource(false);
-    checkSiteStatuses(DEFAULT_PROJECTS);
+    calculateHealthStats(DEFAULT_PROJECTS);
   };
 
-  const checkSiteStatuses = async (projectList?: Project[]) => {
-    setChecking(true);
-    const statuses: Record<string, boolean> = {};
-    const projectsToCheck = projectList || projects;
+  const calculateHealthStats = (projectData: any[]) => {
+    const total = projectData.length;
+    const live = projectData.filter((p) => p.status === 'live').length;
+    const avgProgress = projectData.reduce((sum, p) => sum + (p.progress ?? 0), 0) / (total || 1);
     
-    for (const project of projectsToCheck) {
-      if (project.status === 'live') {
-        try {
-          const response = await fetch(`/api/check-status?url=${encodeURIComponent(project.url)}`);
-          const data = await response.json();
-          statuses[project.id] = data.isUp;
-        } catch (error) {
-          statuses[project.id] = false;
-        }
-      }
-    }
+    const dates = projectData
+      .map((p) => p.updated_at)
+      .filter((d) => d)
+      .sort()
+      .reverse();
     
-    setSiteStatuses(statuses);
-    setChecking(false);
-  };
+    const lastUpdate = dates[0] 
+      ? new Date(dates[0]).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric',
+          year: 'numeric'
+        })
+      : 'Never';
 
-  const saveProject = async (project: Project) => {
-    if (dbSource) {
-      await supabase.from('nsprd_projects').upsert({
-        id: project.id,
-        name: project.name,
-        emoji: project.emoji,
-        description: project.description,
-        url: project.url,
-        status: project.status,
-        category: project.category ?? 'core',
-        progress: project.progress ?? 0,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
-    }
+    setHealthStats({
+      totalProjects: total,
+      liveProjects: live,
+      avgProgress: Math.round(avgProgress),
+      lastUpdate,
+    });
   };
-
-  const handleAddProject = async (project: Project) => {
-    const newProjects = [...projects, project];
-    setProjects(newProjects);
-    await saveProject(project);
-    setShowAddModal(false);
-  };
-
-  const handleEditProject = async (project: Project) => {
-    const newProjects = projects.map(p => p.id === project.id ? project : p);
-    setProjects(newProjects);
-    await saveProject(project);
-    setEditingProject(null);
-  };
-
-  const handleDeleteProject = async (id: string) => {
-    if (confirm('Are you sure you want to delete this project?')) {
-      const newProjects = projects.filter(p => p.id !== id);
-      setProjects(newProjects);
-      if (dbSource) {
-        await supabase.from('nsprd_projects').delete().eq('id', id);
-      }
-    }
-  };
-
-  const liveProjects = projects.filter(p => p.status === 'live').length;
-  const upSites = Object.values(siteStatuses).filter(Boolean).length;
 
   return (
-    <main className="min-h-screen bg-black text-white relative overflow-hidden">
-      {/* Premium Animated Background */}
-      <div className="fixed inset-0 -z-10">
-        {/* Base gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-purple-950/20 to-black"></div>
-        
-        {/* Animated orbs */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-float-delayed"></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-600/10 rounded-full blur-3xl animate-float-slow"></div>
-        
-        {/* Grid overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
-      </div>
+    <main style={{
+      padding: '24px',
+      maxWidth: '960px',
+      margin: '0 auto',
+    }}>
+      <header style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        marginBottom: '32px',
+        paddingBottom: '20px',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 600, letterSpacing: '-0.3px' }}>
+          Mission Control
+        </h1>
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '5px',
+          fontSize: '12px',
+          fontWeight: 500,
+          color: 'var(--live)',
+          background: 'rgba(52, 199, 89, 0.1)',
+          border: '1px solid rgba(52, 199, 89, 0.25)',
+          borderRadius: '20px',
+          padding: '3px 10px',
+        }}>
+          <span style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            background: 'var(--live)',
+            display: 'inline-block',
+          }} />
+          Live
+        </span>
+      </header>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 relative">
-        {/* Hero Section */}
-        <div className={`text-center mb-12 sm:mb-16 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
-          <div className="mb-4 inline-block">
-            <div className="text-6xl sm:text-7xl animate-float">🚀</div>
+      {/* Projects Health Score Widget */}
+      <section style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '12px',
+        marginBottom: '32px',
+        padding: '20px',
+        background: 'var(--card-bg)',
+        border: '1px solid var(--border)',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+      }}
+        className="health-widget"
+      >
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        }}>
+          <div style={{
+            fontSize: '32px',
+            fontWeight: 600,
+            letterSpacing: '-0.5px',
+            color: 'var(--text)',
+          }}>
+            {healthStats.totalProjects}
           </div>
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-4 tracking-tight">
-            <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-purple-600 text-transparent bg-clip-text">
-              Mission Control
-            </span>
-          </h1>
-          <p className="text-lg sm:text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-            Your command center for all projects, tools, and systems
-          </p>
-          
-          {/* System Status */}
-          <div className="inline-flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-3 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <StatusIndicator isUp={!checking && upSites === liveProjects} size="md" />
-              <div className="text-left">
-                <div className="text-xs text-gray-500 uppercase font-medium">System Status</div>
-                <div className="text-sm text-gray-300 font-semibold">
-                  {checking ? 'Checking...' : `${upSites}/${liveProjects} Online`}
-                </div>
-              </div>
-            </div>
-            <div className="w-px h-10 bg-white/10"></div>
-            {dbSource && (
-              <div className="text-xs text-green-400/70 font-medium px-2">
-                ⚡ Live DB
-              </div>
-            )}
-            <button
-              onClick={() => checkSiteStatuses()}
-              disabled={checking}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-xl transition-all text-white font-medium disabled:opacity-50"
-            >
-              <span className={checking ? 'animate-spin' : ''}>🔄</span>
-            </button>
+          <div style={{
+            fontSize: '13px',
+            fontWeight: 500,
+            color: 'var(--text-secondary)',
+          }}>
+            Total Projects
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className={`transition-all duration-1000 delay-100 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          <QuickActions />
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        }}>
+          <div style={{
+            fontSize: '32px',
+            fontWeight: 600,
+            letterSpacing: '-0.5px',
+            color: 'var(--live)',
+          }}>
+            {healthStats.liveProjects}
+          </div>
+          <div style={{
+            fontSize: '13px',
+            fontWeight: 500,
+            color: 'var(--text-secondary)',
+          }}>
+            Live Projects
+          </div>
         </div>
 
-        {/* System Health */}
-        <div className={`transition-all duration-1000 delay-150 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          <SystemHealth />
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        }}>
+          <div style={{
+            fontSize: '32px',
+            fontWeight: 600,
+            letterSpacing: '-0.5px',
+            color: 'var(--text)',
+          }}>
+            {healthStats.avgProgress}%
+          </div>
+          <div style={{
+            fontSize: '13px',
+            fontWeight: 500,
+            color: 'var(--text-secondary)',
+          }}>
+            Avg Progress
+          </div>
         </div>
 
-        {/* Projects Section */}
-        <section className={`mb-12 transition-all duration-1000 delay-200 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">🎯</div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 text-transparent bg-clip-text">
-                Projects
-              </h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Category Filter */}
-              <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl px-2 py-1">
-                {['all', 'core', 'business', 'archive', 'fun'].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setCategoryFilter(cat)}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                      categoryFilter === cat
-                        ? 'bg-purple-600 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    {cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl transition-all text-white font-medium shadow-lg shadow-purple-900/50"
-              >
-                + Add
-              </button>
-            </div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        }}>
+          <div style={{
+            fontSize: '32px',
+            fontWeight: 600,
+            letterSpacing: '-0.5px',
+            color: 'var(--text)',
+          }}>
+            {healthStats.lastUpdate}
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects
-              .filter(p => categoryFilter === 'all' || p.category === categoryFilter)
-              .map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  isUp={siteStatuses[project.id]}
-                  onEdit={() => setEditingProject(project)}
-                  onDelete={() => handleDeleteProject(project.id)}
-                />
-              ))}
+          <div style={{
+            fontSize: '13px',
+            fontWeight: 500,
+            color: 'var(--text-secondary)',
+          }}>
+            Last Update
           </div>
-          
-          {categoryFilter !== 'all' && projects.filter(p => p.category === categoryFilter).length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              No projects in this category yet
-            </div>
-          )}
-        </section>
+        </div>
+      </section>
 
-        {/* Stats */}
-        <section className={`transition-all duration-1000 delay-400 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-purple-500/50 transition-all">
-              <div className="text-4xl font-black text-purple-400 mb-2">
-                {liveProjects}
-              </div>
-              <div className="text-gray-400 text-sm font-medium">Projects Live</div>
-            </div>
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-green-500/50 transition-all">
-              <div className="text-4xl font-black text-green-400 mb-2">
-                {checking ? '...' : upSites}
-              </div>
-              <div className="text-gray-400 text-sm font-medium">Systems Up</div>
-            </div>
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-pink-500/50 transition-all">
-              <div className="text-4xl font-black text-pink-400 mb-2">
-                {projects.length}
-              </div>
-              <div className="text-gray-400 text-sm font-medium">Total Projects</div>
-            </div>
-          </div>
-        </section>
+      <section style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '16px',
+      }}
+        className="project-grid"
+      >
+        {projects.map((p) => (
+          <ProjectCard key={p.id} project={p} />
+        ))}
+      </section>
 
-        {/* Footer */}
-        <footer className={`mt-12 text-center transition-all duration-1000 delay-600 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="inline-flex items-center gap-2 text-gray-500 text-sm">
-            <span className="animate-pulse">✨</span>
-            <span>Front door to Jake's digital empire</span>
-            <span className="animate-pulse">✨</span>
-          </div>
-        </footer>
-      </div>
-
-      {/* Add/Edit Project Modal */}
-      {(showAddModal || editingProject) && (
-        <AddProjectModal
-          project={editingProject}
-          onSave={editingProject ? handleEditProject : handleAddProject}
-          onClose={() => {
-            setShowAddModal(false);
-            setEditingProject(null);
-          }}
-        />
-      )}
-
-      <style jsx global>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          33% { transform: translateY(-20px) translateX(10px); }
-          66% { transform: translateY(10px) translateX(-10px); }
+      <style>{`
+        @media (max-width: 720px) {
+          .health-widget {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .project-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
         }
-        @keyframes float-delayed {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          33% { transform: translateY(10px) translateX(-20px); }
-          66% { transform: translateY(-10px) translateX(10px); }
+        @media (max-width: 480px) {
+          .project-grid {
+            grid-template-columns: 1fr !important;
+          }
         }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          50% { transform: translateY(-15px) translateX(15px); }
-        }
-        .animate-float { animation: float 8s ease-in-out infinite; }
-        .animate-float-delayed { animation: float-delayed 10s ease-in-out infinite; }
-        .animate-float-slow { animation: float-slow 12s ease-in-out infinite; }
       `}</style>
     </main>
   );
