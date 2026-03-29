@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Golden hour tracker for Cathedral City with dynamic desert sky gradients">
+  <title>Desert Hours - Golden Hour Tracker</title>
+  
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- SunCalc library -->
+  <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.min.js"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --font-time: 'Playfair Display', Georgia, serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --text-primary: #FFFFFF;
+      --text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background: linear-gradient(to bottom, #FFD700, #FF6B35);
+      transition: background 5s ease-in-out;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 500px;
+      width: 100%;
+      padding: 48px 32px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 48px;
+    }
+
+    .location {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: var(--text-shadow);
+    }
+
+    .region {
+      font-size: 14px;
+      font-weight: 400;
+      opacity: 0.85;
+      text-shadow: var(--text-shadow);
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .current-time {
+      font-family: var(--font-time);
+      font-size: 72px;
+      font-weight: 400;
+      line-height: 1;
+      text-shadow: var(--text-shadow);
+      margin-bottom: 8px;
+    }
+
+    .timezone {
+      font-size: 16px;
+      font-weight: 400;
+      letter-spacing: 1px;
+      opacity: 0.85;
+      text-shadow: var(--text-shadow);
+    }
+
+    .next-event {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .next-label {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .countdown {
+      font-size: 16px;
+      font-weight: 400;
+      opacity: 0.85;
+      text-shadow: var(--text-shadow);
+    }
+
+    .divider {
+      border: none;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.3);
+      margin: 32px 0;
+      box-shadow: var(--text-shadow);
+    }
+
+    .times-list {
+      list-style: none;
+    }
+
+    .time-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      text-shadow: var(--text-shadow);
+    }
+
+    .time-item.active {
+      opacity: 1;
+      font-weight: 600;
+    }
+
+    .time-label {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .time-label .emoji {
+      font-size: 20px;
+      margin-right: 12px;
+    }
+
+    .time-value {
+      font-family: var(--font-time);
+      font-size: 16px;
+      font-weight: 400;
+    }
+
+    /* Controls */
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 12px;
+      border-radius: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .control-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.3s;
+      white-space: nowrap;
+    }
+
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .control-btn.active {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .control-label {
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.7;
+      padding: 0 4px;
+      display: flex;
+      align-items: center;
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        max-width: 600px;
+      }
+      
+      .current-time {
+        font-size: 96px;
+      }
+
+      .control-btn {
+        font-size: 12px;
+        padding: 8px 14px;
+      }
+
+      .control-label {
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .controls {
+        bottom: 10px;
+        max-width: 90vw;
+      }
+
+      .control-row {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="location">CATHEDRAL CITY</div>
+      <div class="region">🌵 Desert</div>
+    </div>
+
+    <div class="hero">
+      <div class="current-time" id="current-time">--:--</div>
+      <div class="timezone" id="timezone">PDT</div>
+    </div>
+
+    <div class="next-event">
+      <div class="next-label">Next: <span id="next-event-name">Golden Hour</span></div>
+      <div class="countdown">in <span id="countdown">--</span></div>
+    </div>
+
+    <hr class="divider">
+
+    <ul class="times-list" id="times-list">
+      <!-- Populated by JavaScript -->
+    </ul>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <!-- Theme selector -->
+    <div class="control-row">
+      <span class="control-label">Theme:</span>
+      <button class="control-btn active" onclick="setTheme('desert')">Desert</button>
+      <button class="control-btn" onclick="setTheme('ocean')">Ocean</button>
+      <button class="control-btn" onclick="setTheme('forest')">Forest</button>
+      <button class="control-btn" onclick="setTheme('mono')">Mono</button>
+    </div>
+
+    <!-- Time preview selector -->
+    <div class="control-row">
+      <span class="control-label">View:</span>
+      <button class="control-btn active" onclick="setPreviewTime('live')">Live</button>
+      <button class="control-btn" onclick="setPreviewTime('dawn')">Dawn</button>
+      <button class="control-btn" onclick="setPreviewTime('golden')">Golden</button>
+      <button class="control-btn" onclick="setPreviewTime('sunset')">Sunset</button>
+      <button class="control-btn" onclick="setPreviewTime('night')">Night</button>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const CATHEDRAL_CITY = {
+      lat: 33.7806,
+      lng: -116.3647,
+      name: 'Cathedral City'
+    };
+
+    // Theme definitions
+    const THEMES = {
+      desert: {
+        dawn: 'linear-gradient(to bottom, #4A3A5C, #F4A261)',
+        day: 'linear-gradient(to bottom, #87CEEB, #B0E0E6)',
+        golden: 'linear-gradient(to bottom, #FFD700, #FF6B35)',
+        dusk: 'linear-gradient(to bottom, #9D84B7, #1B2845)',
+        night: 'linear-gradient(to bottom, #0A1128, #000000)'
+      },
+      ocean: {
+        dawn: 'linear-gradient(to bottom, #2E4052, #5FA8D3)',
+        day: 'linear-gradient(to bottom, #4A90E2, #7CB9E8)',
+        golden: 'linear-gradient(to bottom, #5FA8D3, #1B4965)',
+        dusk: 'linear-gradient(to bottom, #1B4965, #0A2540)',
+        night: 'linear-gradient(to bottom, #0A1931, #000814)'
+      },
+      forest: {
+        dawn: 'linear-gradient(to bottom, #2D4A2B, #8BB174)',
+        day: 'linear-gradient(to bottom, #6A994E, #A7C957)',
+        golden: 'linear-gradient(to bottom, #BC6C25, #DDA15E)',
+        dusk: 'linear-gradient(to bottom, #283618, #1C2716)',
+        night: 'linear-gradient(to bottom, #0D1B0E, #000000)'
+      },
+      mono: {
+        dawn: 'linear-gradient(to bottom, #4A4A4A, #ADADAD)',
+        day: 'linear-gradient(to bottom, #E0E0E0, #F5F5F5)',
+        golden: 'linear-gradient(to bottom, #BDBDBD, #757575)',
+        dusk: 'linear-gradient(to bottom, #424242, #212121)',
+        night: 'linear-gradient(to bottom, #1A1A1A, #000000)'
+      }
+    };
+
+    // State
+    let currentTheme = localStorage.getItem('desertHoursTheme') || 'desert';
+    let previewMode = null; // null = live, or a time of day string
+    let sunTimes = null;
+
+    // Initialize
+    function init() {
+      calculateSunTimes();
+      setTheme(currentTheme, false);
+      updateDisplay();
+      
+      // Update every second
+      setInterval(updateDisplay, 1000);
+    }
+
+    // Calculate sun times for today
+    function calculateSunTimes() {
+      const now = new Date();
+      const times = SunCalc.getTimes(now, CATHEDRAL_CITY.lat, CATHEDRAL_CITY.lng);
+      
+      // Calculate golden hours
+      const sunriseTime = times.sunrise;
+      const sunsetTime = times.sunset;
+      const goldenHourMorningEnd = new Date(sunriseTime.getTime() + 30 * 60 * 1000);
+      const goldenHourEveningStart = new Date(sunsetTime.getTime() - 60 * 60 * 1000);
+      const blueHourStart = new Date(sunsetTime.getTime() + 30 * 60 * 1000);
+      
+      sunTimes = {
+        sunrise: sunriseTime,
+        goldenMorning: goldenHourMorningEnd,
+        solarNoon: times.solarNoon,
+        goldenEvening: goldenHourEveningStart,
+        sunset: sunsetTime,
+        blueHour: blueHourStart
+      };
+    }
+
+    // Update all display elements
+    function updateDisplay() {
+      const now = previewMode ? getPreviewTime() : new Date();
+      
+      // Update current time
+      updateCurrentTime(now);
+      
+      // Update gradient
+      updateGradient(now);
+      
+      // Update next event
+      updateNextEvent(now);
+      
+      // Update times list
+      updateTimesList();
+    }
+
+    // Update current time display
+    function updateCurrentTime(now) {
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const timeString = `${hours % 12 || 12}:${minutes.toString().padStart(2, '0')}`;
+      
+      document.getElementById('current-time').textContent = timeString;
+      
+      // Update timezone (PST/PDT auto-detection)
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Los_Angeles',
+        timeZoneName: 'short'
+      });
+      const parts = formatter.formatToParts(now);
+      const tzPart = parts.find(p => p.type === 'timeZoneName');
+      document.getElementById('timezone').textContent = tzPart ? tzPart.value : 'PDT';
+    }
+
+    // Get gradient based on time
+    function getGradientType(now) {
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const time = hours + minutes / 60;
+      
+      if (!sunTimes) return 'day';
+      
+      const sunriseHour = sunTimes.sunrise.getHours() + sunTimes.sunrise.getMinutes() / 60;
+      const sunsetHour = sunTimes.sunset.getHours() + sunTimes.sunset.getMinutes() / 60;
+      const goldenEveningHour = sunTimes.goldenEvening.getHours() + sunTimes.goldenEvening.getMinutes() / 60;
+      const blueHourHour = sunTimes.blueHour.getHours() + sunTimes.blueHour.getMinutes() / 60;
+      
+      if (time >= sunriseHour - 0.5 && time < sunriseHour + 0.5) {
+        return 'dawn';
+      } else if (time >= sunriseHour + 0.5 && time < goldenEveningHour) {
+        return 'day';
+      } else if (time >= goldenEveningHour && time < sunsetHour + 0.5) {
+        return 'golden';
+      } else if (time >= sunsetHour + 0.5 && time < blueHourHour) {
+        return 'dusk';
+      } else {
+        return 'night';
+      }
+    }
+
+    // Update gradient
+    function updateGradient(now) {
+      const gradientType = getGradientType(now);
+      const gradient = THEMES[currentTheme][gradientType];
+      document.body.style.background = gradient;
+    }
+
+    // Update next event
+    function updateNextEvent(now) {
+      if (!sunTimes) return;
+      
+      const events = [
+        { name: 'Sunrise', time: sunTimes.sunrise },
+        { name: 'Morning Golden Hour', time: sunTimes.goldenMorning },
+        { name: 'Solar Noon', time: sunTimes.solarNoon },
+        { name: 'Evening Golden Hour', time: sunTimes.goldenEvening },
+        { name: 'Sunset', time: sunTimes.sunset },
+        { name: 'Blue Hour', time: sunTimes.blueHour }
+      ];
+      
+      // Find next event
+      let nextEvent = null;
+      for (const event of events) {
+        if (event.time > now) {
+          nextEvent = event;
+          break;
+        }
+      }
+      
+      // If no event today, show tomorrow's sunrise
+      if (!nextEvent) {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowTimes = SunCalc.getTimes(tomorrow, CATHEDRAL_CITY.lat, CATHEDRAL_CITY.lng);
+        nextEvent = { name: 'Sunrise', time: tomorrowTimes.sunrise };
+      }
+      
+      // Update display
+      document.getElementById('next-event-name').textContent = nextEvent.name;
+      
+      // Calculate countdown
+      const diff = nextEvent.time - now;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      let countdownText;
+      if (hours > 0) {
+        countdownText = `${hours}h ${minutes}m`;
+      } else if (minutes > 0) {
+        countdownText = `${minutes}m`;
+      } else {
+        countdownText = 'now';
+      }
+      
+      document.getElementById('countdown').textContent = countdownText;
+    }
+
+    // Update times list
+    function updateTimesList() {
+      if (!sunTimes) return;
+      
+      const timesList = document.getElementById('times-list');
+      
+      const events = [
+        { emoji: '🌅', label: 'Sunrise', time: sunTimes.sunrise },
+        { emoji: '✨', label: 'Golden', time: sunTimes.goldenMorning },
+        { emoji: '☀️', label: 'Midday', time: sunTimes.solarNoon },
+        { emoji: '✨', label: 'Golden', time: sunTimes.goldenEvening },
+        { emoji: '🌇', label: 'Sunset', time: sunTimes.sunset },
+        { emoji: '🌌', label: 'Blue Hour', time: sunTimes.blueHour }
+      ];
+      
+      timesList.innerHTML = events.map(event => {
+        const timeStr = formatTime(event.time);
+        return `
+          <li class="time-item">
+            <div class="time-label">
+              <span class="emoji">${event.emoji}</span>
+              <span>${event.label}</span>
+            </div>
+            <div class="time-value">${timeStr}</div>
+          </li>
+        `;
+      }).join('');
+    }
+
+    // Format time to 12-hour format
+    function formatTime(date) {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    }
+
+    // Set theme
+    function setTheme(theme, save = true) {
+      currentTheme = theme;
+      if (save) {
+        localStorage.setItem('desertHoursTheme', theme);
+      }
+      
+      // Update active button
+      document.querySelectorAll('.control-row:first-child .control-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event?.target?.classList?.add('active');
+      
+      // Re-apply gradient
+      updateDisplay();
+    }
+
+    // Set preview time
+    function setPreviewTime(mode) {
+      previewMode = mode === 'live' ? null : mode;
+      
+      // Update active button
+      document.querySelectorAll('.control-row:last-child .control-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event?.target?.classList?.add('active');
+      
+      // Update display
+      updateDisplay();
+    }
+
+    // Get preview time based on mode
+    function getPreviewTime() {
+      if (!sunTimes) return new Date();
+      
+      const today = new Date();
+      today.setSeconds(0);
+      today.setMilliseconds(0);
+      
+      switch (previewMode) {
+        case 'dawn':
+          today.setHours(sunTimes.sunrise.getHours());
+          today.setMinutes(sunTimes.sunrise.getMinutes() - 15);
+          return today;
+        case 'golden':
+          today.setHours(sunTimes.goldenEvening.getHours());
+          today.setMinutes(sunTimes.goldenEvening.getMinutes() + 15);
+          return today;
+        case 'sunset':
+          today.setHours(sunTimes.sunset.getHours());
+          today.setMinutes(sunTimes.sunset.getMinutes());
+          return today;
+        case 'night':
+          today.setHours(22);
+          today.setMinutes(0);
+          return today;
+        default:
+          return new Date();
+      }
+    }
+
+    // Start app
+    init();
+  </script>
+</body>
+</html>
