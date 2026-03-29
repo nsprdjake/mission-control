@@ -39,23 +39,134 @@
       justify-content: center;
       padding: 0;
       overflow-x: hidden;
+      position: relative;
     }
 
+    /* Sky gradient background layer */
+    .sky-gradient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      transition: background 5s ease-in-out;
+    }
+
+    /* Stars layer (night only) */
+    .stars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 5s ease-in-out;
+      pointer-events: none;
+    }
+
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+    }
+
+    /* Sun/Moon */
+    .celestial-body {
+      position: fixed;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      z-index: 2;
+      transition: all 5s ease-in-out;
+      pointer-events: none;
+      box-shadow: 0 0 60px rgba(255, 255, 255, 0.4);
+    }
+
+    /* Mountain layers */
+    .mountains {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .mountain-layer {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      transition: opacity 3s ease-in-out;
+    }
+
+    .mountain-back {
+      height: 50%;
+      background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.15));
+    }
+
+    .mountain-mid {
+      height: 60%;
+      background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.25));
+    }
+
+    .mountain-front {
+      height: 40%;
+      background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.4));
+    }
+
+    /* Ground layer */
+    .ground {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 20%;
+      background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.6));
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    /* Cacti */
+    .cacti {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 40%;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .cactus {
+      position: absolute;
+      bottom: 5%;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    }
+
+    /* Content layer */
     .container {
       max-width: 500px;
       width: 100%;
-      padding: 48px 32px;
+      padding: 48px 32px 120px 32px; /* Extra bottom padding for controls */
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: flex-start;
+      gap: 48px;
+      position: relative;
+      z-index: 10;
     }
 
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 48px;
     }
 
     .location {
@@ -75,7 +186,6 @@
 
     .hero {
       text-align: center;
-      margin-bottom: 48px;
     }
 
     .current-time {
@@ -97,7 +207,6 @@
 
     .next-event {
       text-align: center;
-      margin-bottom: 48px;
     }
 
     .next-label {
@@ -118,12 +227,16 @@
       border: none;
       height: 1px;
       background: rgba(255, 255, 255, 0.3);
-      margin: 32px 0;
+      margin: 0;
       box-shadow: var(--text-shadow);
     }
 
     .times-list {
       list-style: none;
+      background: rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 16px;
+      border-radius: 12px;
     }
 
     .time-item {
@@ -221,6 +334,11 @@
         font-size: 96px;
       }
 
+      .celestial-body {
+        width: 200px;
+        height: 200px;
+      }
+
       .control-btn {
         font-size: 12px;
         padding: 8px 14px;
@@ -241,10 +359,70 @@
         flex-wrap: wrap;
         justify-content: center;
       }
+
+      .celestial-body {
+        width: 120px;
+        height: 120px;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- Sky gradient background -->
+  <div class="sky-gradient" id="sky-gradient"></div>
+
+  <!-- Stars (night only) -->
+  <div class="stars" id="stars"></div>
+
+  <!-- Sun/Moon -->
+  <div class="celestial-body" id="celestial-body"></div>
+
+  <!-- Mountains (layered silhouettes) -->
+  <div class="mountains">
+    <svg class="mountain-layer mountain-back" viewBox="0 0 1200 300" preserveAspectRatio="none">
+      <path d="M0,300 L0,150 L200,100 L400,140 L600,80 L800,120 L1000,100 L1200,140 L1200,300 Z" 
+            fill="rgba(0, 0, 0, 0.15)"/>
+    </svg>
+    <svg class="mountain-layer mountain-mid" viewBox="0 0 1200 360" preserveAspectRatio="none">
+      <path d="M0,360 L0,200 L150,120 L350,180 L550,100 L750,160 L950,120 L1200,200 L1200,360 Z" 
+            fill="rgba(0, 0, 0, 0.25)"/>
+    </svg>
+    <svg class="mountain-layer mountain-front" viewBox="0 0 1200 240" preserveAspectRatio="none">
+      <path d="M0,240 L0,140 L200,80 L400,120 L600,60 L800,100 L1000,80 L1200,160 L1200,240 Z" 
+            fill="rgba(0, 0, 0, 0.4)"/>
+    </svg>
+  </div>
+
+  <!-- Ground -->
+  <div class="ground"></div>
+
+  <!-- Cacti silhouettes -->
+  <div class="cacti" id="cacti">
+    <!-- Left saguaro -->
+    <svg class="cactus" style="left: 15%; height: 35%;" viewBox="0 0 100 200" preserveAspectRatio="xMidYMax meet">
+      <path d="M45,200 L45,80 L40,80 L40,40 L30,40 L30,100 L35,100 L35,200 Z 
+               M55,200 L55,100 L60,100 L60,40 L70,40 L70,80 L65,80 L65,200 Z
+               M40,200 L40,50 L60,50 L60,200 Z" 
+            fill="rgba(0, 0, 0, 0.8)"/>
+    </svg>
+
+    <!-- Right saguaro -->
+    <svg class="cactus" style="right: 20%; height: 40%;" viewBox="0 0 100 200" preserveAspectRatio="xMidYMax meet">
+      <path d="M45,200 L45,60 L40,60 L40,30 L30,30 L30,90 L35,90 L35,200 Z 
+               M55,200 L55,90 L60,90 L60,30 L70,30 L70,60 L65,60 L65,200 Z
+               M40,200 L40,40 L60,40 L60,200 Z" 
+            fill="rgba(0, 0, 0, 0.9)"/>
+    </svg>
+
+    <!-- Center small cactus -->
+    <svg class="cactus" style="left: 50%; height: 25%; transform: translateX(-50%);" viewBox="0 0 80 160" preserveAspectRatio="xMidYMax meet">
+      <path d="M35,160 L35,50 L30,50 L30,30 L25,30 L25,80 L30,80 L30,160 Z
+               M45,160 L45,80 L50,80 L50,30 L55,30 L55,50 L50,50 L50,160 Z
+               M30,160 L30,40 L50,40 L50,160 Z" 
+            fill="rgba(0, 0, 0, 0.7)"/>
+    </svg>
+  </div>
+
   <div class="container">
     <div class="header">
       <div class="location">CATHEDRAL CITY</div>
@@ -298,46 +476,112 @@
       name: 'Cathedral City'
     };
 
-    // Theme definitions
+    // Theme definitions with richer gradients
     const THEMES = {
       desert: {
-        dawn: 'linear-gradient(to bottom, #4A3A5C, #F4A261)',
-        day: 'linear-gradient(to bottom, #87CEEB, #B0E0E6)',
-        golden: 'linear-gradient(to bottom, #FFD700, #FF6B35)',
-        dusk: 'linear-gradient(to bottom, #9D84B7, #1B2845)',
-        night: 'linear-gradient(to bottom, #0A1128, #000000)'
+        dawn: {
+          gradient: 'linear-gradient(to bottom, #3D2C54 0%, #5C4A72 20%, #8B6F9C 40%, #D4A574 70%, #F4A261 100%)',
+          celestial: { color: '#FFE5B4', opacity: 0.6, position: 75 }
+        },
+        day: {
+          gradient: 'linear-gradient(to bottom, #4A90E2 0%, #87CEEB 50%, #B0E0E6 100%)',
+          celestial: { color: '#FFF9E6', opacity: 1, position: 30 }
+        },
+        golden: {
+          gradient: 'linear-gradient(to bottom, #FFD700 0%, #FFA500 30%, #FF8C00 60%, #FF6B35 90%, #9D5C63 100%)',
+          celestial: { color: '#FFF4E0', opacity: 0.9, position: 60 }
+        },
+        dusk: {
+          gradient: 'linear-gradient(to bottom, #4A3A5C 0%, #6B5B7E 30%, #9D84B7 60%, #3D2E52 90%, #1B2845 100%)',
+          celestial: { color: '#FFD4A3', opacity: 0.5, position: 80 }
+        },
+        night: {
+          gradient: 'linear-gradient(to bottom, #0A1128 0%, #1C2541 40%, #1A1A2E 70%, #000000 100%)',
+          celestial: { color: '#F0F0F0', opacity: 0.8, position: 25 },
+          stars: true
+        }
       },
       ocean: {
-        dawn: 'linear-gradient(to bottom, #2E4052, #5FA8D3)',
-        day: 'linear-gradient(to bottom, #4A90E2, #7CB9E8)',
-        golden: 'linear-gradient(to bottom, #5FA8D3, #1B4965)',
-        dusk: 'linear-gradient(to bottom, #1B4965, #0A2540)',
-        night: 'linear-gradient(to bottom, #0A1931, #000814)'
+        dawn: {
+          gradient: 'linear-gradient(to bottom, #2E4052 0%, #4A6FA5 40%, #5FA8D3 80%, #87CEEB 100%)',
+          celestial: { color: '#FFF5E6', opacity: 0.6, position: 70 }
+        },
+        day: {
+          gradient: 'linear-gradient(to bottom, #4A90E2 0%, #5FA8D3 50%, #7CB9E8 100%)',
+          celestial: { color: '#FFFEF0', opacity: 1, position: 30 }
+        },
+        golden: {
+          gradient: 'linear-gradient(to bottom, #5FA8D3 0%, #4A90A4 40%, #2C5F7E 70%, #1B4965 100%)',
+          celestial: { color: '#FFE5CC', opacity: 0.8, position: 60 }
+        },
+        dusk: {
+          gradient: 'linear-gradient(to bottom, #1B4965 0%, #2C5F7E 50%, #0A2540 100%)',
+          celestial: { color: '#FFD9B3', opacity: 0.5, position: 75 }
+        },
+        night: {
+          gradient: 'linear-gradient(to bottom, #0A1931 0%, #1A2F4A 40%, #000814 100%)',
+          celestial: { color: '#E8E8E8', opacity: 0.8, position: 25 },
+          stars: true
+        }
       },
       forest: {
-        dawn: 'linear-gradient(to bottom, #2D4A2B, #8BB174)',
-        day: 'linear-gradient(to bottom, #6A994E, #A7C957)',
-        golden: 'linear-gradient(to bottom, #BC6C25, #DDA15E)',
-        dusk: 'linear-gradient(to bottom, #283618, #1C2716)',
-        night: 'linear-gradient(to bottom, #0D1B0E, #000000)'
+        dawn: {
+          gradient: 'linear-gradient(to bottom, #2D4A2B 0%, #4A6B45 40%, #8BB174 80%, #A7C957 100%)',
+          celestial: { color: '#FFF3E0', opacity: 0.6, position: 70 }
+        },
+        day: {
+          gradient: 'linear-gradient(to bottom, #6A994E 0%, #8BB174 50%, #A7C957 100%)',
+          celestial: { color: '#FFFBF0', opacity: 1, position: 30 }
+        },
+        golden: {
+          gradient: 'linear-gradient(to bottom, #BC6C25 0%, #A0522D 40%, #8B4513 70%, #DDA15E 100%)',
+          celestial: { color: '#FFE8CC', opacity: 0.8, position: 60 }
+        },
+        dusk: {
+          gradient: 'linear-gradient(to bottom, #283618 0%, #3D4A2B 50%, #1C2716 100%)',
+          celestial: { color: '#FFDAB3', opacity: 0.5, position: 75 }
+        },
+        night: {
+          gradient: 'linear-gradient(to bottom, #0D1B0E 0%, #1A2F1B 40%, #000000 100%)',
+          celestial: { color: '#E0E0E0', opacity: 0.8, position: 25 },
+          stars: true
+        }
       },
       mono: {
-        dawn: 'linear-gradient(to bottom, #4A4A4A, #ADADAD)',
-        day: 'linear-gradient(to bottom, #E0E0E0, #F5F5F5)',
-        golden: 'linear-gradient(to bottom, #BDBDBD, #757575)',
-        dusk: 'linear-gradient(to bottom, #424242, #212121)',
-        night: 'linear-gradient(to bottom, #1A1A1A, #000000)'
+        dawn: {
+          gradient: 'linear-gradient(to bottom, #4A4A4A 0%, #757575 40%, #ADADAD 80%, #D3D3D3 100%)',
+          celestial: { color: '#F5F5F5', opacity: 0.6, position: 70 }
+        },
+        day: {
+          gradient: 'linear-gradient(to bottom, #E0E0E0 0%, #F0F0F0 50%, #F5F5F5 100%)',
+          celestial: { color: '#FFFFFF', opacity: 1, position: 30 }
+        },
+        golden: {
+          gradient: 'linear-gradient(to bottom, #BDBDBD 0%, #9E9E9E 40%, #757575 80%, #616161 100%)',
+          celestial: { color: '#F8F8F8', opacity: 0.8, position: 60 }
+        },
+        dusk: {
+          gradient: 'linear-gradient(to bottom, #424242 0%, #2C2C2C 50%, #212121 100%)',
+          celestial: { color: '#E0E0E0', opacity: 0.5, position: 75 }
+        },
+        night: {
+          gradient: 'linear-gradient(to bottom, #1A1A1A 0%, #0F0F0F 50%, #000000 100%)',
+          celestial: { color: '#D0D0D0', opacity: 0.8, position: 25 },
+          stars: true
+        }
       }
     };
 
     // State
     let currentTheme = localStorage.getItem('desertHoursTheme') || 'desert';
-    let previewMode = null; // null = live, or a time of day string
+    let previewMode = null;
     let sunTimes = null;
+    let starsGenerated = false;
 
     // Initialize
     function init() {
       calculateSunTimes();
+      generateStars();
       setTheme(currentTheme, false);
       updateDisplay();
       
@@ -345,12 +589,31 @@
       setInterval(updateDisplay, 1000);
     }
 
+    // Generate random stars
+    function generateStars() {
+      if (starsGenerated) return;
+      
+      const starsContainer = document.getElementById('stars');
+      const starCount = 100;
+      
+      for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.top = `${Math.random() * 70}%`; // Keep stars in upper 70% of sky
+        star.style.opacity = Math.random() * 0.8 + 0.2;
+        star.style.animationDelay = `${Math.random() * 3}s`;
+        starsContainer.appendChild(star);
+      }
+      
+      starsGenerated = true;
+    }
+
     // Calculate sun times for today
     function calculateSunTimes() {
       const now = new Date();
       const times = SunCalc.getTimes(now, CATHEDRAL_CITY.lat, CATHEDRAL_CITY.lng);
       
-      // Calculate golden hours
       const sunriseTime = times.sunrise;
       const sunsetTime = times.sunset;
       const goldenHourMorningEnd = new Date(sunriseTime.getTime() + 30 * 60 * 1000);
@@ -371,16 +634,9 @@
     function updateDisplay() {
       const now = previewMode ? getPreviewTime() : new Date();
       
-      // Update current time
       updateCurrentTime(now);
-      
-      // Update gradient
-      updateGradient(now);
-      
-      // Update next event
+      updateScene(now);
       updateNextEvent(now);
-      
-      // Update times list
       updateTimesList();
     }
 
@@ -392,7 +648,6 @@
       
       document.getElementById('current-time').textContent = timeString;
       
-      // Update timezone (PST/PDT auto-detection)
       const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: 'America/Los_Angeles',
         timeZoneName: 'short'
@@ -402,7 +657,7 @@
       document.getElementById('timezone').textContent = tzPart ? tzPart.value : 'PDT';
     }
 
-    // Get gradient based on time
+    // Get gradient type based on time
     function getGradientType(now) {
       const hours = now.getHours();
       const minutes = now.getMinutes();
@@ -428,11 +683,48 @@
       }
     }
 
-    // Update gradient
-    function updateGradient(now) {
+    // Update entire scene (gradient, celestial body, stars)
+    function updateScene(now) {
       const gradientType = getGradientType(now);
-      const gradient = THEMES[currentTheme][gradientType];
-      document.body.style.background = gradient;
+      const sceneConfig = THEMES[currentTheme][gradientType];
+      
+      // Update gradient
+      const skyGradient = document.getElementById('sky-gradient');
+      skyGradient.style.background = sceneConfig.gradient;
+      
+      // Update celestial body (sun/moon)
+      const celestialBody = document.getElementById('celestial-body');
+      if (sceneConfig.celestial) {
+        celestialBody.style.background = sceneConfig.celestial.color;
+        celestialBody.style.opacity = sceneConfig.celestial.opacity;
+        
+        // Position based on time (left to right arc across sky)
+        const position = sceneConfig.celestial.position;
+        celestialBody.style.left = `${position}%`;
+        celestialBody.style.top = calculateCelestialHeight(position);
+        celestialBody.style.transform = 'translate(-50%, -50%)';
+        
+        // Adjust shadow based on whether it's sun or moon
+        if (gradientType === 'night') {
+          celestialBody.style.boxShadow = '0 0 40px rgba(255, 255, 255, 0.5)';
+        } else {
+          celestialBody.style.boxShadow = `0 0 80px ${sceneConfig.celestial.color}`;
+        }
+      } else {
+        celestialBody.style.opacity = 0;
+      }
+      
+      // Update stars
+      const stars = document.getElementById('stars');
+      stars.style.opacity = sceneConfig.stars ? 1 : 0;
+    }
+
+    // Calculate celestial body height (arc across sky)
+    function calculateCelestialHeight(horizontalPosition) {
+      // Parabolic arc: highest at 50%, lowest at 0% and 100%
+      const normalized = horizontalPosition / 100;
+      const heightPercent = 70 - (Math.pow(normalized - 0.5, 2) * 4 * 60);
+      return `${heightPercent}%`;
     }
 
     // Update next event
@@ -448,7 +740,6 @@
         { name: 'Blue Hour', time: sunTimes.blueHour }
       ];
       
-      // Find next event
       let nextEvent = null;
       for (const event of events) {
         if (event.time > now) {
@@ -457,7 +748,6 @@
         }
       }
       
-      // If no event today, show tomorrow's sunrise
       if (!nextEvent) {
         const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -465,10 +755,8 @@
         nextEvent = { name: 'Sunrise', time: tomorrowTimes.sunrise };
       }
       
-      // Update display
       document.getElementById('next-event-name').textContent = nextEvent.name;
       
-      // Calculate countdown
       const diff = nextEvent.time - now;
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -530,13 +818,11 @@
         localStorage.setItem('desertHoursTheme', theme);
       }
       
-      // Update active button
       document.querySelectorAll('.control-row:first-child .control-btn').forEach(btn => {
         btn.classList.remove('active');
       });
       event?.target?.classList?.add('active');
       
-      // Re-apply gradient
       updateDisplay();
     }
 
@@ -544,13 +830,11 @@
     function setPreviewTime(mode) {
       previewMode = mode === 'live' ? null : mode;
       
-      // Update active button
       document.querySelectorAll('.control-row:last-child .control-btn').forEach(btn => {
         btn.classList.remove('active');
       });
       event?.target?.classList?.add('active');
       
-      // Update display
       updateDisplay();
     }
 
