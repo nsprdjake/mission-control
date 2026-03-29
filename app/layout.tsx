@@ -7,6 +7,18 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.ico',
   },
+  openGraph: {
+    title: "Jake's Mission Control",
+    description: "Central hub for all projects and tools",
+    images: [
+      {
+        url: "https://hub.nsprd.com/assets/hub-og.png",
+        width: 1200,
+        height: 630,
+        type: "image/png",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({

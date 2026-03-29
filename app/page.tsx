@@ -138,6 +138,7 @@ const DEFAULT_PROJECTS: Project[] = [
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [healthStats, setHealthStats] = useState<HealthStats>({
     totalProjects: 0,
     liveProjects: 0,
@@ -172,6 +173,7 @@ export default function Home() {
         }));
         setProjects(mapped);
         calculateHealthStats(data);
+        setLoading(false);
         return;
       }
     } catch (err) {
@@ -180,6 +182,7 @@ export default function Home() {
 
     setProjects(DEFAULT_PROJECTS);
     calculateHealthStats(DEFAULT_PROJECTS);
+    setLoading(false);
   };
 
   const calculateHealthStats = (projectData: any[]) => {
@@ -208,6 +211,45 @@ export default function Home() {
       lastUpdate,
     });
   };
+
+  const HealthWidgetSkeleton = () => (
+    <section style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: '12px',
+      marginBottom: '32px',
+      padding: '20px',
+      background: 'var(--card-bg)',
+      border: '1px solid var(--border)',
+      borderRadius: '12px',
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+    }}
+      className="health-widget"
+    >
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        }}>
+          <div style={{
+            height: '38px',
+            width: '80%',
+            background: 'var(--border)',
+            borderRadius: '8px',
+            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }} />
+          <div style={{
+            height: '16px',
+            width: '60%',
+            background: 'var(--border)',
+            borderRadius: '4px',
+            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }} />
+        </div>
+      ))}
+    </section>
+  );
 
   return (
     <main style={{
@@ -250,107 +292,111 @@ export default function Home() {
       </header>
 
       {/* Projects Health Score Widget */}
-      <section style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '12px',
-        marginBottom: '32px',
-        padding: '20px',
-        background: 'var(--card-bg)',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-      }}
-        className="health-widget"
-      >
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px',
-        }}>
+      {loading ? (
+        <HealthWidgetSkeleton />
+      ) : (
+        <section style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '12px',
+          marginBottom: '32px',
+          padding: '20px',
+          background: 'var(--card-bg)',
+          border: '1px solid var(--border)',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+        }}
+          className="health-widget"
+        >
           <div style={{
-            fontSize: '32px',
-            fontWeight: 600,
-            letterSpacing: '-0.5px',
-            color: 'var(--text)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
           }}>
-            {healthStats.totalProjects}
+            <div style={{
+              fontSize: '32px',
+              fontWeight: 600,
+              letterSpacing: '-0.5px',
+              color: 'var(--text)',
+            }}>
+              {healthStats.totalProjects}
+            </div>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
+            }}>
+              Total Projects
+            </div>
           </div>
-          <div style={{
-            fontSize: '13px',
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
-          }}>
-            Total Projects
-          </div>
-        </div>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px',
-        }}>
           <div style={{
-            fontSize: '32px',
-            fontWeight: 600,
-            letterSpacing: '-0.5px',
-            color: 'var(--live)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
           }}>
-            {healthStats.liveProjects}
+            <div style={{
+              fontSize: '32px',
+              fontWeight: 600,
+              letterSpacing: '-0.5px',
+              color: 'var(--live)',
+            }}>
+              {healthStats.liveProjects}
+            </div>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
+            }}>
+              Live Projects
+            </div>
           </div>
-          <div style={{
-            fontSize: '13px',
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
-          }}>
-            Live Projects
-          </div>
-        </div>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px',
-        }}>
           <div style={{
-            fontSize: '32px',
-            fontWeight: 600,
-            letterSpacing: '-0.5px',
-            color: 'var(--text)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
           }}>
-            {healthStats.avgProgress}%
+            <div style={{
+              fontSize: '32px',
+              fontWeight: 600,
+              letterSpacing: '-0.5px',
+              color: 'var(--text)',
+            }}>
+              {healthStats.avgProgress}%
+            </div>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
+            }}>
+              Avg Progress
+            </div>
           </div>
-          <div style={{
-            fontSize: '13px',
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
-          }}>
-            Avg Progress
-          </div>
-        </div>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px',
-        }}>
           <div style={{
-            fontSize: '32px',
-            fontWeight: 600,
-            letterSpacing: '-0.5px',
-            color: 'var(--text)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
           }}>
-            {healthStats.lastUpdate}
+            <div style={{
+              fontSize: '32px',
+              fontWeight: 600,
+              letterSpacing: '-0.5px',
+              color: 'var(--text)',
+            }}>
+              {healthStats.lastUpdate}
+            </div>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
+            }}>
+              Last Update
+            </div>
           </div>
-          <div style={{
-            fontSize: '13px',
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
-          }}>
-            Last Update
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section style={{
         display: 'grid',
@@ -365,6 +411,14 @@ export default function Home() {
       </section>
 
       <style>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
         @media (max-width: 720px) {
           .health-widget {
             grid-template-columns: repeat(2, 1fr) !important;
